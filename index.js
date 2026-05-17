@@ -28,16 +28,25 @@ const multer = require("multer");
 
 const app = express();
 
-const storage = multer.diskStorage({
-  destination: "./uploads/images",
-  filename: (req, file, cb) => {
-    const uniqueSuffix = `${file.fieldname} -${Date.now()}`;
-    const ext = path.extname(file.originalname);
-    cb(null, `${uniqueSuffix}${ext}`);
-  },
-});
+// Rasmlar
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const allowedExts = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
+  const ext = path.extname(file.originalname).toLowerCase();
 
-const upload = multer({ storage: storage });
+  if (allowedTypes.includes(file.mimetype) && allowedExts.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(
+      new Error(
+        `Faqat rasm fayllari qabul qilinadi! (jpg, jpeg, png, webp, gif)`,
+      ),
+      false,
+    );
+  }
+};
+
+const upload = multer({ storage: fileFilter });
 
 app.use("/images", express.static("uploads/images"));
 
@@ -51,6 +60,32 @@ app.post("/upload", upload.array("uploads"), (req, res) => {
   });
 });
 
+// Video
+const videoFileFilter = (req, file, cb) => {
+  const allowedTypes = ["video/mp4", "video/webm", "video/ogg"];
+  const allowedExts = [".mp4", ".webm", ".ogg"];
+  const ext = path.extname(file.originalname).toLowerCase();
+
+  if (allowedTypes.includes(file.mimetype) && allowedExts.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Faqat videolar qabul qilinadi! (mp4, webm, ogg)"), false);
+  }
+};
+
+const videoUpload = multer({ storage: videoFileFilter });
+
+app.use("/videos", express.static("uploads/videos"));
+
+app.post("/upload-video", videoUpload.array("uploads"), (req, res) => {
+  const videos = req.files.map(
+    (Video, i) => `http://localhost:3000/videos/${req.files[i].filename}`,
+  );
+
+  res.status(200).json({
+    data: videos,
+  });
+});
 app.listen(3000, () => {
   console.log("ishladi");
 });
